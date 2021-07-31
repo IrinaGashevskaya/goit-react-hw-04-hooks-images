@@ -1,0 +1,21 @@
+.SearchForm {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+ 
+  background-color: blue;
+ 
+  
+}
+.buttonForm {
+    border:blue;
+    background-color: white;
+}
+.input {
+    border: none;
+    outline: none;
+}
+.SearchForm-input::placeholder {
+  font: inherit;
+  font-size: 18px;
+}
