@@ -1,4 +1,6 @@
 .SearchBar {
+    margin-right: auto;
+    margin-left: auto;
     background-color: blue;
     padding: 10px;
      margin-bottom: 40px;

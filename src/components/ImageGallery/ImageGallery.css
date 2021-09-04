@@ -6,6 +6,8 @@
 
 
 .gallery {
+  margin-right: auto;
+  margin-left: auto;
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
