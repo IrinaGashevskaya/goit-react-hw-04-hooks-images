@@ -1,108 +1,95 @@
 import React from 'react';
-
+import { useState, useEffect } from 'react';
 import 'modern-normalize/modern-normalize.css';
 import { ImCross } from 'react-icons/im';
-import fetchImages from './components/Api/Api';
+import fetchImages from './ApiService/ApiService';
 import IconButton from './components/IconButton/IconButton';
 import ImageGallery from './components/ImageGallery/ImageGallery';
 import Button from './components/Button/Button';
 import SearchBar from './components/SearchBar/SearchBar';
 import LoaderApp from './components/Loader/Loader';
 import Modal from './components/Modal/Modal';
-class App extends React.Component {
-  state = {
-    images: [],
-    currentPage: 1,
-    searchQuery: '',
-    isLoading: false,
-    showModal: false,
-    largeImage: '',
-    error: null,
-  };
-  componentDidUpdate(prevProps, prevState) {
-    if (prevState.searchQuery !== this.state.searchQuery) {
-      this.getImages();
+
+const App = () => {
+  const [searchQuery, setSearchQuery] = useState('');
+  const [images, setImages] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [showModal, setShowModal] = useState(false);
+  const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [largeImage, setLargeImage] = useState({});
+  const [total, setTotal] = useState(0);
+  useEffect(() => {
+    if (searchQuery) {
+      getImages();
     }
-  }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchQuery]);
 
-  onChangeQuery = query => {
-    this.setState({
-      images: [],
-      currentPage: 1,
-      searchQuery: query,
-      error: null,
-    });
+  const getImages = () => {
+    setIsLoading(true);
+
+    fetchImages(searchQuery, currentPage)
+      .then(({ hits, total }) => {
+        setImages(prev => [...prev, ...hits]);
+        setCurrentPage(prev => prev + 1);
+        setTotal(total);
+
+        scrollOnLoadButton();
+      })
+      .catch(error => setError(error))
+
+      .finally(() => setIsLoading(false));
   };
 
-  getImages = async () => {
-    const { currentPage, searchQuery } = this.state;
-
-    this.setState({
-      isLoading: true,
-    });
-
-    try {
-      const { hits } = await fetchImages(searchQuery, currentPage);
-
-      this.setState(prevState => ({
-        images: [...prevState.images, ...hits],
-        currentPage: prevState.currentPage + 1,
-      }));
-
-      if (currentPage !== 1) {
-        this.scrollOnLoadButton();
-      }
-    } catch (error) {
-      this.setState({ error });
-    } finally {
-      this.setState({
-        isLoading: false,
-      });
+  const onChangeQuery = query => {
+    if (query === searchQuery) {
+      return;
     }
+
+    setSearchQuery(query);
+    setImages([]);
+    setCurrentPage(1);
   };
 
-  handleGalleryItem = fullImageUrl => {
-    this.setState({
-      largeImage: fullImageUrl,
-      showModal: true,
-    });
+  const toggleModal = () => {
+    setShowModal(prev => !prev);
   };
 
-  toggleModal = () => {
-    this.setState(prevState => ({
-      showModal: !prevState.showModal,
-      largeImage: '',
-    }));
+  const handleGalleryItem = largeImage => {
+    setLargeImage(largeImage);
+    toggleModal();
   };
-  scrollOnLoadButton = () => {
+
+  const scrollOnLoadButton = () => {
     window.scrollTo({
       top: document.documentElement.offsetHeight,
       behavior: 'smooth',
       block: 'end',
     });
   };
-  render() {
-    const { images, showModal, largeImage, isLoading } = this.state;
-    const needToShowLoadMore = images.length > 0 && images.length >= 12;
-    return (
-      <>
-        <SearchBar onSubmit={this.onChangeQuery} />
-        <ImageGallery images={images} onImageClick={this.handleGalleryItem} />
-        {needToShowLoadMore && <Button onClick={this.getImages} />}
-        {showModal && (
-          <Modal onClose={this.toggleModal}>
-            <div className="Close-box">
-              <IconButton onClick={this.toggleModal} aria-label="Close modal">
-                <ImCross width="20px" height="20px" fill="#7e7b7b" />
-              </IconButton>
-            </div>
-            <img src={largeImage} alt="" className="Modal-image" />
-          </Modal>
-        )}
-        {isLoading && <LoaderApp />}
-      </>
-    );
-  }
-}
+  const needToShowLoadMore = () => {
+    return Math.ceil(total / 12) !== currentPage - 1;
+  };
+
+  return (
+    <>
+      <SearchBar onSubmit={onChangeQuery} />
+      <ImageGallery images={images} onImageClick={handleGalleryItem} />
+      {needToShowLoadMore && <Button onClick={getImages} />}
+      {showModal && (
+        <Modal onClose={toggleModal}>
+          <div className="Close-box">
+            <IconButton onClick={toggleModal} aria-label="Close modal">
+              <ImCross width="20px" height="20px" fill="#7e7b7b" />
+            </IconButton>
+          </div>
+          <img src={largeImage} alt="" className="Modal-image" />
+        </Modal>
+      )}
+      {isLoading && <LoaderApp />}
+    </>
+  );
+};
 
 export default App;
